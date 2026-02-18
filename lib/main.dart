@@ -17,7 +17,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
   int happinessLevel = 50;
   int hungerLevel = 50;
 
-  // PART 1 FEATURE #1: Dynamic Pet Color Change
+  // Mood color
   Color _moodColor(int happinessLevel) {
     if (happinessLevel > 70) {
       return Colors.green;
@@ -25,6 +25,28 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
       return Colors.yellow;
     } else {
       return Colors.red;
+    }
+  }
+
+  // Mood text
+  String _moodStatus(int happinessLevel) {
+    if (happinessLevel > 70) {
+      return "Happy";
+    } else if (happinessLevel >= 30) {
+      return "Neutral";
+    } else {
+      return "Unhappy";
+    }
+  }
+
+  // Mood emoji
+  String _moodEmoji(int happinessLevel) {
+    if (happinessLevel > 70) {
+      return "😄";
+    } else if (happinessLevel >= 30) {
+      return "🙂";
+    } else {
+      return "😢";
     }
   }
 
@@ -50,7 +72,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
       happinessLevel += 10;
     }
 
-    // clamp happiness
     if (happinessLevel > 100) happinessLevel = 100;
     if (happinessLevel < 0) happinessLevel = 0;
   }
@@ -77,9 +98,18 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text('Name: $petName', style: TextStyle(fontSize: 20.0)),
-            SizedBox(height: 16.0),
 
-            // Pet Image with ColorFiltered tint (Part 1 Feature #1)
+            SizedBox(height: 10),
+
+            // Mood text + emoji together
+            Text(
+              'Mood: ${_moodStatus(happinessLevel)} ${_moodEmoji(happinessLevel)}',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+
+            SizedBox(height: 16),
+
+            // Pet image with color filter
             ColorFiltered(
               colorFilter: ColorFilter.mode(
                 _moodColor(happinessLevel),
@@ -91,19 +121,25 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
               ),
             ),
 
-            SizedBox(height: 16.0),
+            SizedBox(height: 16),
+
             Text('Happiness Level: $happinessLevel',
                 style: TextStyle(fontSize: 20.0)),
-            SizedBox(height: 16.0),
+
+            SizedBox(height: 16),
+
             Text('Hunger Level: $hungerLevel',
                 style: TextStyle(fontSize: 20.0)),
+
             SizedBox(height: 32.0),
 
             ElevatedButton(
               onPressed: _playWithPet,
               child: Text('Play with Your Pet'),
             ),
-            SizedBox(height: 16.0),
+
+            SizedBox(height: 16),
+
             ElevatedButton(
               onPressed: _feedPet,
               child: Text('Feed Your Pet'),
