@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -17,8 +18,32 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
   int happinessLevel = 50;
   int hungerLevel = 50;
 
-  //  PART 1 FEATURE #3: Name input controller
   final TextEditingController _nameController = TextEditingController();
+
+  // Timers
+  Timer? _countdownTimer;
+
+  //  Countdown seconds until next hunger increase
+  int secondsUntilHungerTick = 30;
+
+  @override
+  void initState() {
+    super.initState();
+
+    //  One timer runs every second:
+    // - updates countdown
+    // - when countdown hits 0 -> hunger increases, countdown resets to 30
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        secondsUntilHungerTick--;
+
+        if (secondsUntilHungerTick <= 0) {
+          _autoIncreaseHunger();
+          secondsUntilHungerTick = 30;
+        }
+      });
+    });
+  }
 
   // Mood color
   Color _moodColor(int happinessLevel) {
@@ -31,7 +56,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     }
   }
 
-  // Mood text
   String _moodStatus(int happinessLevel) {
     if (happinessLevel > 70) {
       return "Happy";
@@ -42,7 +66,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     }
   }
 
-  // Mood emoji
   String _moodEmoji(int happinessLevel) {
     if (happinessLevel > 70) {
       return "😄";
@@ -82,6 +105,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
   void _updateHunger() {
     setState(() {
       hungerLevel += 5;
+
       if (hungerLevel > 100) {
         hungerLevel = 100;
         happinessLevel -= 20;
@@ -90,7 +114,17 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
-  // Update pet name
+  //  Called when countdown hits 0
+  void _autoIncreaseHunger() {
+    hungerLevel += 5;
+
+    if (hungerLevel > 100) {
+      hungerLevel = 100;
+      happinessLevel -= 20;
+      if (happinessLevel < 0) happinessLevel = 0;
+    }
+  }
+
   void _setPetName() {
     final newName = _nameController.text.trim();
     if (newName.isEmpty) return;
@@ -104,7 +138,8 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
 
   @override
   void dispose() {
-    _nameController.dispose(); // prevent memory leak
+    _countdownTimer?.cancel();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -120,7 +155,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              // Name customization UI
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -133,22 +167,26 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                 onPressed: _setPetName,
                 child: Text("Set Name"),
               ),
-
               SizedBox(height: 20),
 
               Text('Name: $petName', style: TextStyle(fontSize: 20.0)),
-
               SizedBox(height: 10),
 
-              // Mood text + emoji
               Text(
                 'Mood: ${_moodStatus(happinessLevel)} ${_moodEmoji(happinessLevel)}',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
 
+              SizedBox(height: 8),
+
+              // Countdown display
+              Text(
+                'Next hunger increase in: $secondsUntilHungerTick s',
+                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+              ),
+
               SizedBox(height: 16),
 
-              // Pet image with color filter
               ColorFiltered(
                 colorFilter: ColorFilter.mode(
                   _moodColor(happinessLevel),
@@ -164,7 +202,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
 
               Text('Happiness Level: $happinessLevel',
                   style: TextStyle(fontSize: 20.0)),
-
               SizedBox(height: 16),
 
               Text('Hunger Level: $hungerLevel',
@@ -176,8 +213,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                 onPressed: _playWithPet,
                 child: Text('Play with Your Pet'),
               ),
-
-              SizedBox(height: 16),
+              SizedBox(height: 16.0),
 
               ElevatedButton(
                 onPressed: _feedPet,
