@@ -20,20 +20,19 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
 
   final TextEditingController _nameController = TextEditingController();
 
-  // Timers
-  Timer? _countdownTimer;
+  Timer? _timer;
 
-  //  Countdown seconds until next hunger increase
   int secondsUntilHungerTick = 30;
+  int happySeconds = 0; // track win condition
+  bool gameEnded = false;
 
   @override
   void initState() {
     super.initState();
 
-    //  One timer runs every second:
-    // - updates countdown
-    // - when countdown hits 0 -> hunger increases, countdown resets to 30
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (gameEnded) return;
+
       setState(() {
         secondsUntilHungerTick--;
 
@@ -41,39 +40,73 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
           _autoIncreaseHunger();
           secondsUntilHungerTick = 30;
         }
+
+        // WIN tracking
+        if (happinessLevel > 80) {
+          happySeconds++;
+          if (happySeconds >= 180) {
+            _showDialog("YOU WIN 🎉", "Your pet stayed happy for 3 minutes!");
+          }
+        } else {
+          happySeconds = 0;
+        }
+
+        // LOSS condition
+        if (hungerLevel >= 100 && happinessLevel <= 10) {
+          _showDialog("GAME OVER", "Your pet became too hungry and sad.");
+        }
       });
     });
   }
 
-  // Mood color
+  void _showDialog(String title, String message) {
+    gameEnded = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _resetGame();
+            },
+            child: Text("Reset"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetGame() {
+    setState(() {
+      happinessLevel = 50;
+      hungerLevel = 50;
+      secondsUntilHungerTick = 30;
+      happySeconds = 0;
+      gameEnded = false;
+    });
+  }
+
   Color _moodColor(int happinessLevel) {
-    if (happinessLevel > 70) {
-      return Colors.green;
-    } else if (happinessLevel >= 30) {
-      return Colors.yellow;
-    } else {
-      return Colors.red;
-    }
+    if (happinessLevel > 70) return Colors.green;
+    if (happinessLevel >= 30) return Colors.yellow;
+    return Colors.red;
   }
 
   String _moodStatus(int happinessLevel) {
-    if (happinessLevel > 70) {
-      return "Happy";
-    } else if (happinessLevel >= 30) {
-      return "Neutral";
-    } else {
-      return "Unhappy";
-    }
+    if (happinessLevel > 70) return "Happy";
+    if (happinessLevel >= 30) return "Neutral";
+    return "Unhappy";
   }
 
   String _moodEmoji(int happinessLevel) {
-    if (happinessLevel > 70) {
-      return "😄";
-    } else if (happinessLevel >= 30) {
-      return "🙂";
-    } else {
-      return "😢";
-    }
+    if (happinessLevel > 70) return "😄";
+    if (happinessLevel >= 30) return "🙂";
+    return "😢";
   }
 
   void _playWithPet() {
@@ -97,32 +130,19 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     } else {
       happinessLevel += 10;
     }
-
-    if (happinessLevel > 100) happinessLevel = 100;
-    if (happinessLevel < 0) happinessLevel = 0;
   }
 
   void _updateHunger() {
-    setState(() {
-      hungerLevel += 5;
-
-      if (hungerLevel > 100) {
-        hungerLevel = 100;
-        happinessLevel -= 20;
-        if (happinessLevel < 0) happinessLevel = 0;
-      }
-    });
-  }
-
-  //  Called when countdown hits 0
-  void _autoIncreaseHunger() {
     hungerLevel += 5;
-
     if (hungerLevel > 100) {
       hungerLevel = 100;
       happinessLevel -= 20;
-      if (happinessLevel < 0) happinessLevel = 0;
     }
+  }
+
+  void _autoIncreaseHunger() {
+    hungerLevel += 5;
+    if (hungerLevel > 100) hungerLevel = 100;
   }
 
   void _setPetName() {
@@ -138,7 +158,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
 
   @override
   void dispose() {
-    _countdownTimer?.cancel();
+    _timer?.cancel();
     _nameController.dispose();
     super.dispose();
   }
@@ -146,15 +166,12 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Digital Pet'),
-      ),
+      appBar: AppBar(title: Text('Digital Pet')),
       body: Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
+            children: [
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -163,13 +180,10 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                 ),
               ),
               SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _setPetName,
-                child: Text("Set Name"),
-              ),
+              ElevatedButton(onPressed: _setPetName, child: Text("Set Name")),
               SizedBox(height: 20),
 
-              Text('Name: $petName', style: TextStyle(fontSize: 20.0)),
+              Text('Name: $petName', style: TextStyle(fontSize: 20)),
               SizedBox(height: 10),
 
               Text(
@@ -177,13 +191,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
 
-              SizedBox(height: 8),
-
-              // Countdown display
-              Text(
-                'Next hunger increase in: $secondsUntilHungerTick s',
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-              ),
+              Text('Next hunger increase in: $secondsUntilHungerTick s'),
 
               SizedBox(height: 16),
 
@@ -192,29 +200,20 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                   _moodColor(happinessLevel),
                   BlendMode.modulate,
                 ),
-                child: Image.asset(
-                  'assets/pet_image.png',
-                  height: 180,
-                ),
+                child: Image.asset('assets/pet_image.png', height: 180),
               ),
 
               SizedBox(height: 16),
 
-              Text('Happiness Level: $happinessLevel',
-                  style: TextStyle(fontSize: 20.0)),
-              SizedBox(height: 16),
+              Text('Happiness Level: $happinessLevel'),
+              Text('Hunger Level: $hungerLevel'),
 
-              Text('Hunger Level: $hungerLevel',
-                  style: TextStyle(fontSize: 20.0)),
-
-              SizedBox(height: 32.0),
+              SizedBox(height: 32),
 
               ElevatedButton(
                 onPressed: _playWithPet,
                 child: Text('Play with Your Pet'),
               ),
-              SizedBox(height: 16.0),
-
               ElevatedButton(
                 onPressed: _feedPet,
                 child: Text('Feed Your Pet'),
