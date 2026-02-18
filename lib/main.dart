@@ -17,6 +17,9 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
   int happinessLevel = 50;
   int hungerLevel = 50;
 
+  //  PART 1 FEATURE #3: Name input controller
+  final TextEditingController _nameController = TextEditingController();
+
   // Mood color
   Color _moodColor(int happinessLevel) {
     if (happinessLevel > 70) {
@@ -87,6 +90,24 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
+  // Update pet name
+  void _setPetName() {
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) return;
+
+    setState(() {
+      petName = newName;
+    });
+
+    _nameController.clear();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose(); // prevent memory leak
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,57 +115,76 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
         title: Text('Digital Pet'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text('Name: $petName', style: TextStyle(fontSize: 20.0)),
-
-            SizedBox(height: 10),
-
-            // Mood text + emoji together
-            Text(
-              'Mood: ${_moodStatus(happinessLevel)} ${_moodEmoji(happinessLevel)}',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-
-            SizedBox(height: 16),
-
-            // Pet image with color filter
-            ColorFiltered(
-              colorFilter: ColorFilter.mode(
-                _moodColor(happinessLevel),
-                BlendMode.modulate,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              // Name customization UI
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: "Enter pet name",
+                  border: OutlineInputBorder(),
+                ),
               ),
-              child: Image.asset(
-                'assets/pet_image.png',
-                height: 180,
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _setPetName,
+                child: Text("Set Name"),
               ),
-            ),
 
-            SizedBox(height: 16),
+              SizedBox(height: 20),
 
-            Text('Happiness Level: $happinessLevel',
-                style: TextStyle(fontSize: 20.0)),
+              Text('Name: $petName', style: TextStyle(fontSize: 20.0)),
 
-            SizedBox(height: 16),
+              SizedBox(height: 10),
 
-            Text('Hunger Level: $hungerLevel',
-                style: TextStyle(fontSize: 20.0)),
+              // Mood text + emoji
+              Text(
+                'Mood: ${_moodStatus(happinessLevel)} ${_moodEmoji(happinessLevel)}',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
 
-            SizedBox(height: 32.0),
+              SizedBox(height: 16),
 
-            ElevatedButton(
-              onPressed: _playWithPet,
-              child: Text('Play with Your Pet'),
-            ),
+              // Pet image with color filter
+              ColorFiltered(
+                colorFilter: ColorFilter.mode(
+                  _moodColor(happinessLevel),
+                  BlendMode.modulate,
+                ),
+                child: Image.asset(
+                  'assets/pet_image.png',
+                  height: 180,
+                ),
+              ),
 
-            SizedBox(height: 16),
+              SizedBox(height: 16),
 
-            ElevatedButton(
-              onPressed: _feedPet,
-              child: Text('Feed Your Pet'),
-            ),
-          ],
+              Text('Happiness Level: $happinessLevel',
+                  style: TextStyle(fontSize: 20.0)),
+
+              SizedBox(height: 16),
+
+              Text('Hunger Level: $hungerLevel',
+                  style: TextStyle(fontSize: 20.0)),
+
+              SizedBox(height: 32.0),
+
+              ElevatedButton(
+                onPressed: _playWithPet,
+                child: Text('Play with Your Pet'),
+              ),
+
+              SizedBox(height: 16),
+
+              ElevatedButton(
+                onPressed: _feedPet,
+                child: Text('Feed Your Pet'),
+              ),
+            ],
+          ),
         ),
       ),
     );
