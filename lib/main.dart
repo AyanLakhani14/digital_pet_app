@@ -18,19 +18,20 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
   int happinessLevel = 50;
   int hungerLevel = 50;
 
-  // ✅ PART 2: Energy bar state (visual only for this step)
+  //  Energy state
   int energyLevel = 70;
 
-  // Name input
   final TextEditingController _nameController = TextEditingController();
-
-  // Timer (countdown + hunger tick + win/loss checks)
   Timer? _timer;
 
-  // (Your current faster testing settings)
+  // Testing speed (set back to 30 later)
   int secondsUntilHungerTick = 10;
+
+  // Win/Loss tracking (set win back to 180 later)
   int happySeconds = 0;
   bool gameEnded = false;
+
+  int _clamp(int v) => v.clamp(0, 100);
 
   @override
   void initState() {
@@ -40,14 +41,14 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
       if (gameEnded) return;
 
       setState(() {
-        // Countdown
         secondsUntilHungerTick--;
+
         if (secondsUntilHungerTick <= 0) {
           _autoIncreaseHunger();
           secondsUntilHungerTick = 10;
         }
 
-        // Win condition (currently sped up to 30 seconds)
+        // Win condition (sped up for testing)
         if (happinessLevel > 80) {
           happySeconds++;
           if (happySeconds >= 30) {
@@ -94,6 +95,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
       happinessLevel = 50;
       hungerLevel = 50;
       energyLevel = 70;
+
       secondsUntilHungerTick = 10;
       happySeconds = 0;
       gameEnded = false;
@@ -101,83 +103,63 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
-  // ✅ Mood color
   Color _moodColor(int happinessLevel) {
-    if (happinessLevel > 70) {
-      return Colors.green;
-    } else if (happinessLevel >= 30) {
-      return Colors.yellow;
-    } else {
-      return Colors.red;
-    }
+    if (happinessLevel > 70) return Colors.green;
+    if (happinessLevel >= 30) return Colors.yellow;
+    return Colors.red;
   }
 
-  // ✅ Mood text
   String _moodStatus(int happinessLevel) {
-    if (happinessLevel > 70) {
-      return "Happy";
-    } else if (happinessLevel >= 30) {
-      return "Neutral";
-    } else {
-      return "Unhappy";
-    }
+    if (happinessLevel > 70) return "Happy";
+    if (happinessLevel >= 30) return "Neutral";
+    return "Unhappy";
   }
 
-  // ✅ Mood emoji (kept)
   String _moodEmoji(int happinessLevel) {
-    if (happinessLevel > 70) {
-      return "😄";
-    } else if (happinessLevel >= 30) {
-      return "🙂";
-    } else {
-      return "😢";
-    }
+    if (happinessLevel > 70) return "😄";
+    if (happinessLevel >= 30) return "🙂";
+    return "😢";
   }
 
+  // Energy logic: play costs energy, feeding restores a bit
   void _playWithPet() {
     setState(() {
-      happinessLevel += 10;
-      _updateHunger();
+      happinessLevel = _clamp(happinessLevel + 10);
+
+      // play increases hunger a bit too (optional but makes sense)
+      hungerLevel = _clamp(hungerLevel + 5);
+
+      // energy decreases
+      energyLevel = _clamp(energyLevel - 10);
     });
   }
 
   void _feedPet() {
     setState(() {
-      hungerLevel -= 10;
-      if (hungerLevel < 0) hungerLevel = 0;
-      _updateHappiness();
+      hungerLevel = _clamp(hungerLevel - 10);
+
+      // feeding affects happiness based on hunger level
+      if (hungerLevel < 30) {
+        happinessLevel = _clamp(happinessLevel - 20);
+      } else {
+        happinessLevel = _clamp(happinessLevel + 10);
+      }
+
+      // energy increases a bit
+      energyLevel = _clamp(energyLevel + 5);
     });
   }
 
-  void _updateHappiness() {
-    if (hungerLevel < 30) {
-      happinessLevel -= 20;
-    } else {
-      happinessLevel += 10;
-    }
-
-    if (happinessLevel > 100) happinessLevel = 100;
-    if (happinessLevel < 0) happinessLevel = 0;
-  }
-
-  void _updateHunger() {
-    hungerLevel += 5;
-    if (hungerLevel > 100) {
-      hungerLevel = 100;
-      happinessLevel -= 20;
-      if (happinessLevel < 0) happinessLevel = 0;
-    }
-  }
-
   void _autoIncreaseHunger() {
-    hungerLevel += 5;
-    if (hungerLevel > 100) hungerLevel = 100;
+    hungerLevel = _clamp(hungerLevel + 5);
 
-    // Optional: if hunger maxes, a small happiness penalty (matches earlier behavior)
+    // if hunger maxes, happiness penalty
     if (hungerLevel == 100) {
-      happinessLevel -= 20;
-      if (happinessLevel < 0) happinessLevel = 0;
+      happinessLevel = _clamp(happinessLevel - 20);
     }
+
+    // optional: small energy recovery over time
+    energyLevel = _clamp(energyLevel + 1);
   }
 
   void _setPetName() {
@@ -222,7 +204,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                 onPressed: _setPetName,
                 child: Text("Set Name"),
               ),
-
               SizedBox(height: 20),
 
               Text('Name: $petName', style: TextStyle(fontSize: 20.0)),
@@ -242,7 +223,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
 
               SizedBox(height: 16),
 
-              // Pet image with color filter
               ColorFiltered(
                 colorFilter: ColorFilter.mode(
                   _moodColor(happinessLevel),
@@ -254,7 +234,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                 ),
               ),
 
-              // ✅ SMALL ENERGY BAR RIGHT UNDER THE DOG
+              // Small energy bar under the dog (now it moves)
               SizedBox(height: 6),
               SizedBox(
                 width: 120,
@@ -271,8 +251,12 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
 
               Text('Hunger Level: $hungerLevel',
                   style: TextStyle(fontSize: 20.0)),
+              SizedBox(height: 8),
 
-              SizedBox(height: 32.0),
+              Text('Energy Level: $energyLevel',
+                  style: TextStyle(fontSize: 18.0)),
+
+              SizedBox(height: 12.0),
 
               ElevatedButton(
                 onPressed: _playWithPet,
